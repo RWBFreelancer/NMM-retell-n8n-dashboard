@@ -195,14 +195,23 @@ src/
     (app)/            Signed-in pages. The nav shell lives here.
       page.tsx        Overview.
       agent/[key]/    One agent: the call table, filters, search, paging, CSV.
+        calls/[id]/   One call: recording, transcript, every field, the recap.
+      ops/            The recap robot, run by run.
     login/            The only page a signed-out person can reach.
     api/              Server routes. The ONLY place a key is used.
   components/         Shared pieces. Never import from src/lib/retell.ts here.
     call-table.tsx    The call table. Caller numbers start hidden.
+    call-recording.tsx  Player and transcript. Click a line to jump to it.
+    field-groups.tsx  The 37 fields, grouped. Names and numbers start hidden.
+    recap-panel.tsx   Did this lead reach Daniel?
   lib/
     call-filters.ts   The quick filters. One definition each, shared.
     call-rows.ts      Turns a Retell call into a table row, in plain English.
     call-row.ts       The row type, and the CSV writer. Server and browser.
+    call-detail.ts    One call turned into groups, warnings, speeds and costs.
+    fields.ts         The 37 analysis fields: plain label, group, how to read.
+    correlate.ts      Matches a call to its n8n run, by call id, never by time.
+    password-hash.mjs Hashing. Shared with both npm scripts. Plain JS for that.
     retell.ts         Retell client. server-only. Read-only allow-list.
     n8n.ts            n8n client. server-only. Read-only allow-list.
     agents.ts         The two agents. Ids only, never a version number.

@@ -480,3 +480,111 @@ export const COLUMN_PLAIN: Record<string, Plain> = {
   ended: { label: "How it ended", means: "Why the call finished." },
   cost: { label: "Cost", means: "What Retell charged for this call." },
 };
+
+/* ------------------------------------------------------------------ *
+ * Have we worked for this caller before? `new_or_existing_customer`.
+ * ------------------------------------------------------------------ */
+
+export const CUSTOMER_PLAIN: Record<string, Plain> = {
+  new: {
+    label: "New to us",
+    means: "We have not worked for this caller before.",
+    tone: "info",
+  },
+  existing: {
+    label: "Already a customer",
+    means: "We have worked for this caller before.",
+    tone: "good",
+  },
+  unknown: {
+    label: "Never said",
+    means: "The caller did not say whether they had used us before.",
+    tone: "neutral",
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * Can the vehicle still be driven? `drivable_or_usable_status`.
+ *
+ * The agent never asks this outright. It only writes it down when the
+ * caller volunteers it, which is why almost every call says "never said".
+ * ------------------------------------------------------------------ */
+
+export const DRIVABLE_PLAIN: Record<string, Plain> = {
+  drivable: {
+    label: "Still drives",
+    means: "The caller said the vehicle or machine still works.",
+    tone: "good",
+  },
+  not_drivable: {
+    label: "Cannot be driven",
+    means: "The caller said it is dead, stuck, or unsafe to use.",
+    soWhat: "Somebody may be stranded.",
+    tone: "bad",
+  },
+  unknown: {
+    label: "Never said",
+    means: "The caller did not mention it, and the agent does not ask.",
+    tone: "neutral",
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * How the caller sounded. Retell writes this one, not our agent.
+ * ------------------------------------------------------------------ */
+
+export const SENTIMENT_PLAIN: Record<string, Plain> = {
+  Positive: { label: "Happy", means: "The caller sounded pleased.", tone: "good" },
+  Neutral: { label: "Neutral", means: "The caller sounded neither happy nor cross.", tone: "neutral" },
+  Negative: { label: "Unhappy", means: "The caller sounded cross or upset.", soWhat: "Worth a listen.", tone: "bad" },
+  Unknown: { label: "Could not tell", means: "Too little was said to judge.", tone: "neutral" },
+};
+
+/* ------------------------------------------------------------------ *
+ * What Retell charges for. One line per thing on the bill.
+ * ------------------------------------------------------------------ */
+
+export const COST_PRODUCT_PLAIN: Record<string, Plain> = {
+  retell_voice_engine: { label: "Running the agent", means: "Retell's own charge for handling the call." },
+  cartesia_tts_new: { label: "The voice", means: "Turning the agent's words into speech." },
+  elevenlabs_tts: { label: "The voice", means: "Turning the agent's words into speech." },
+  gpt_4_1: { label: "The thinking", means: "The language model that decided what to say." },
+  gpt_4_1_text_testing: { label: "The thinking, text tests", means: "Model use from a typed test, not a real call." },
+  llm_token_surcharge: { label: "Extra model charge", means: "Retell's markup on the language model." },
+  us_twilio_telephony: { label: "The phone line", means: "Carrying the call over the phone network." },
+  background_voice_cancellation: { label: "Noise removal", means: "Filtering out other voices and background noise." },
+  guardrail: { label: "Safety checks", means: "Retell's checks on what the agent says." },
+  knowledge_base: { label: "Looking things up", means: "Reading the agent's reference material." },
+};
+
+/* ------------------------------------------------------------------ *
+ * Codes the agent sometimes writes into a free-text field.
+ *
+ * `recommended_next_action` is meant to hold a sentence, but the agent's own
+ * instruction offers `human_review` as an example, and it sometimes writes
+ * exactly that and nothing else. A bare code must never reach the screen in
+ * Simple mode, so it is turned into words here like any other code.
+ * ------------------------------------------------------------------ */
+
+export const NEXT_ACTION_PLAIN: Record<string, Plain> = {
+  human_review: {
+    label: "A person should look at this",
+    means: "The agent could not decide what to do next, so it asked for a human.",
+    tone: "warn",
+  },
+  dispatch_roadside_tech: {
+    label: "Send somebody out to the roadside",
+    means: "The caller is stranded and needs help where they are.",
+    tone: "bad",
+  },
+  call_back_to_schedule: {
+    label: "Ring them back to book it in",
+    means: "The caller wants work done and a time needs arranging.",
+    tone: "good",
+  },
+  ignore: {
+    label: "Nothing to do",
+    means: "The agent judged that this call needs no follow-up.",
+    tone: "neutral",
+  },
+};
