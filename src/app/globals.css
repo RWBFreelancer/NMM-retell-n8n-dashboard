@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/* Class-based dark mode. next-themes puts .dark on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------
+   Colour tokens. Never write a hex value in a component.
+   Every token is defined twice: light here, dark under .dark.
+   --------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-hover: #e9ecf1;
+  --border: #d9dee6;
+  --border-strong: #b9c2ce;
+
+  /* text */
+  --foreground: #14181f;
+  --muted: #5b6573;
+  --faint: #8a93a1;
+
+  /* brand / interactive */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-fg: #ffffff;
+  --accent-soft: #e4ecfd;
+  --ring: #2563eb;
+
+  /* status. Each is paired with a soft background for chips. */
+  --good: #15803d;
+  --good-soft: #dcf5e4;
+  --warn: #a16207;
+  --warn-soft: #fbf0d0;
+  --bad: #b91c1c;
+  --bad-soft: #fbe0e0;
+  --info: #0e7490;
+  --info-soft: #d6eef4;
+  --neutral: #4b5563;
+  --neutral-soft: #e6e9ee;
+
+  /* charts. Categorical, in this order. Distinct in both themes. */
+  --chart-1: #2563eb;
+  --chart-2: #0d9488;
+  --chart-3: #b45309;
+  --chart-4: #7c3aed;
+  --chart-5: #be185d;
+  --chart-6: #4d7c0f;
+  --chart-7: #0369a1;
+  --chart-8: #9a3412;
+  /* "unknown" always gets this one, in every chart, so it reads the same */
+  --chart-unknown: #94a3b8;
+  --grid: #e2e6ec;
+  --axis: #6b7480;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1c232c;
+  --surface-hover: #242c37;
+  --border: #2d3742;
+  --border-strong: #46525f;
+
+  --foreground: #e8edf3;
+  --muted: #9aa6b4;
+  --faint: #6e7a88;
+
+  --accent: #5b9bff;
+  --accent-hover: #7cb0ff;
+  --accent-fg: #0d1117;
+  --accent-soft: #17273f;
+  --ring: #5b9bff;
+
+  --good: #4ade80;
+  --good-soft: #14301f;
+  --warn: #fbbf24;
+  --warn-soft: #362a0d;
+  --bad: #f87171;
+  --bad-soft: #3a1717;
+  --info: #38bdf8;
+  --info-soft: #102b38;
+  --neutral: #9aa6b4;
+  --neutral-soft: #222a34;
+
+  --chart-1: #60a5fa;
+  --chart-2: #2dd4bf;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #f472b6;
+  --chart-6: #a3e635;
+  --chart-7: #38bdf8;
+  --chart-8: #fb923c;
+  --chart-unknown: #64748b;
+  --grid: #263039;
+  --axis: #8b96a3;
+}
+
+/* Expose the tokens to Tailwind utilities: bg-surface, text-muted, etc. */
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keyboard focus must be visible in both themes. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Technical-only bits are hidden unless <html> carries data-reading="technical". */
+[data-reading="simple"] .technical-only {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
