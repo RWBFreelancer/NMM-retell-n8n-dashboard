@@ -588,3 +588,88 @@ export const NEXT_ACTION_PLAIN: Record<string, Plain> = {
     tone: "neutral",
   },
 };
+
+/* ------------------------------------------------------------------ *
+ * The steps the recap robot runs, in plain words.
+ *
+ * These are n8n node names. Most are already readable, so only the ones that
+ * are not get an entry here. The exact node name still shows in Technical
+ * mode, because that is the string somebody types into n8n to find the step.
+ * ------------------------------------------------------------------ */
+
+export const STEP_PLAIN: Record<string, Plain> = {
+  "Retell call_analyzed": {
+    label: "The call arrives from Retell",
+    means: "Retell finished its notes and handed the call over.",
+  },
+  "Guard and Normalize": {
+    label: "Check and tidy the answers",
+    means: "Throws out anything that is not a finished call, and tidies the rest.",
+  },
+  "Build Daniel Payload": {
+    label: "Write the hand-off for Daniel",
+    means: "Puts the lead into the shape Daniel's system expects.",
+  },
+  "Send to Daniel": {
+    label: "Send it to Daniel",
+    means: "The step that actually delivers the lead. The one that matters.",
+  },
+  "Send Recap Email": {
+    label: "Email the recap to Robert",
+    means: "The write-up of the call.",
+  },
+  "Should Send Email?": {
+    label: "Is this worth an email?",
+    means: "A hang-up with nothing in it does not get emailed.",
+  },
+  "If Qualified Service Request": {
+    label: "Is this a real service call?",
+    means: "Decides whether the lead goes any further.",
+  },
+  "Explain Handoff Failure": {
+    label: "Work out what went wrong",
+    means: "Turns the failure into something a person can read.",
+  },
+  "Handoff Failed - Alert Rey & Daniel": {
+    label: "Tell somebody it failed",
+    means: "Emails Rey and Daniel that a lead did not get through.",
+  },
+  "Logged - No Email (Hangup)": {
+    label: "Noted, no email needed",
+    means: "The caller hung up with nothing to send on.",
+  },
+  "Logged - No SMS": {
+    label: "Noted, no text message",
+    means: "Text messages are switched off.",
+  },
+  "SMS Alert to Robert": {
+    label: "Text Robert",
+    means: "Switched off. No text message is ever sent.",
+  },
+  "Download Recording": {
+    label: "Fetch the recording",
+    means: "Gets the audio so it can be filed away.",
+  },
+  "Transcript to File": {
+    label: "Turn the words into a file",
+    means: "Makes a text file of what was said.",
+  },
+  "Attach Drive Links": {
+    label: "Add the links to the files",
+    means: "Puts the recording and transcript links into the recap.",
+  },
+};
+
+/**
+ * A readable name for a step we have no wording for.
+ *
+ * Node names are written by a person, so most are already plain. This only
+ * has to catch a stray code inside one, so no raw code reaches Simple mode.
+ */
+export function stepLabel(name: string): string {
+  const known = STEP_PLAIN[name];
+  if (known) return known.label;
+  return name.replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (t) =>
+    t.replace(/_+/g, " "),
+  );
+}

@@ -5,8 +5,13 @@ import { Download, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type Turn = {
-  /** "agent" or "caller". Already turned into a word on the server. */
-  who: "agent" | "caller";
+  /**
+   * Who spoke. "unknown" is a real answer: when Retell sends no
+   * speaker-by-speaker transcript we only have one block of text with both
+   * voices in it, and guessing would put the agent's words in the caller's
+   * mouth.
+   */
+  who: "agent" | "caller" | "unknown";
   said: string;
   /** Seconds from the start of the recording, when the words carry times. */
   startSec?: number;
@@ -90,9 +95,7 @@ export function CallRecording({
                 key={i}
                 className={cn(
                   "rounded-lg px-3 py-2",
-                  turn.who === "agent"
-                    ? "bg-accent-soft"
-                    : "bg-surface-2",
+                  turn.who === "agent" ? "bg-accent-soft" : "bg-surface-2",
                   playingAt !== null &&
                     playingAt === turn.startSec &&
                     "ring-2 ring-ring",
@@ -100,7 +103,11 @@ export function CallRecording({
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    {turn.who === "agent" ? "The agent" : "The caller"}
+                    {turn.who === "agent"
+                      ? "The agent"
+                      : turn.who === "caller"
+                        ? "The caller"
+                        : "Both voices, not split up"}
                   </span>
                   {canJump ? (
                     <button

@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   description:
     "One screen for both voice agents and the recap workflow: what callers wanted, and whether each lead reached Daniel.",
   robots: { index: false, follow: false },
+  // Lets Rey add it to a phone home screen and open it like an app.
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Ninja Ops", statusBarStyle: "default" },
+  icons: { icon: "/icons/icon.svg", apple: "/icons/icon.svg" },
 };
 
 export const viewport: Viewport = {

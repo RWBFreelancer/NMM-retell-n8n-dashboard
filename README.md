@@ -197,6 +197,7 @@ src/
       agent/[key]/    One agent: the call table, filters, search, paging, CSV.
         calls/[id]/   One call: recording, transcript, every field, the recap.
       ops/            The recap robot, run by run.
+      reports/        What kind of calls came in, and what work people wanted.
     login/            The only page a signed-out person can reach.
     api/              Server routes. The ONLY place a key is used.
   components/         Shared pieces. Never import from src/lib/retell.ts here.
@@ -209,6 +210,8 @@ src/
     call-rows.ts      Turns a Retell call into a table row, in plain English.
     call-row.ts       The row type, and the CSV writer. Server and browser.
     call-detail.ts    One call turned into groups, warnings, speeds and costs.
+    reports.ts        The counting behind Reports. Buckets always add back up.
+    service-categories.ts  Keyword rules guessing what work was wanted.
     fields.ts         The 37 analysis fields: plain label, group, how to read.
     correlate.ts      Matches a call to its n8n run, by call id, never by time.
     password-hash.mjs Hashing. Shared with both npm scripts. Plain JS for that.
@@ -231,3 +234,18 @@ says what it means.
 
 **Theme tokens.** No hex colour in a component. Use the CSS variables in
 `src/app/globals.css`. Every view must be readable in light and in dark.
+
+### Chart colours are not a matter of taste
+
+`--chart-1` to `--chart-8` were chosen by running every possible ordering
+through a colour-blindness check and keeping the one where neighbouring slots
+stay furthest apart. Light and dark are separate sets, not a flip: the old dark
+values were too pale and washed into each other.
+
+Worst adjacent pair: 13.6 apart in light, 12.6 in dark, against a target of 8.
+
+**Before changing or reordering a chart colour, re-run the check.** Also true:
+colour follows the answer, never its position, so a filter or a re-sort never
+repaints a chart; "never said" and "not recorded" always take the same grey;
+and every chart carries a legend and a table, because colour is never allowed
+to be the only signal.

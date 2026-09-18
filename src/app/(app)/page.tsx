@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { AGENTS, AGENT_ORDER, type AgentKey } from "@/lib/agents";
-import { getAgent, listAllCalls, RetellError } from "@/lib/retell";
+import { AGENTS, AGENT_ORDER, type AgentInfo, type AgentKey } from "@/lib/agents";
+import { getAgent, listAllCalls, RetellError, type RetellCall } from "@/lib/retell";
 import { listExecutions, N8nError, getWorkflow } from "@/lib/n8n";
-import { summarise } from "@/lib/stats";
+import { summarise, type AgentStats } from "@/lib/stats";
+import { trendByDay, callTypeSlices } from "@/lib/reports";
 import {
   Card,
   CardTitle,
@@ -14,6 +15,8 @@ import {
   RawName,
   StatTile,
 } from "@/components/ui";
+import { CompareChart, type CompareRow } from "@/components/compare-chart";
+import { TrendChart } from "@/components/report-charts";
 import { RangePicker } from "@/components/range-picker";
 import { rangeLabel, readDays } from "@/lib/ranges";
 import {
@@ -27,6 +30,18 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/** Everything one agent card and the charts need, fetched once. */
+type Loaded = {
+  agent: AgentInfo;
+  liveVersion?: number;
+  fieldCount: number;
+  calls: RetellCall[];
+  stats: AgentStats;
+  truncated: boolean;
+  /** A sentence to show instead of the card, when the read failed. */
+  problem?: string;
+};
+
 export default async function OverviewPage({
   searchParams,
 }: {
@@ -34,6 +49,17 @@ export default async function OverviewPage({
 }) {
   const { days: raw } = await searchParams;
   const days = readDays(raw);
+
+  // ONE AT A TIME. Each agent pages through its own calls, and firing both
+  // together is what makes Retell answer "too many, too fast". Fetched once
+  // here and shared, so the cards and the charts never ask twice.
+  const loaded: Loaded[] = [];
+  for (const key of AGENT_ORDER) {
+    loaded.push(await loadAgent(key, days));
+  }
+
+  const withCalls = loaded.filter((l) => !l.problem);
+  const anyCalls = withCalls.some((l) => l.calls.length > 0);
 
   return (
     <div className="space-y-5">
@@ -64,17 +90,156 @@ export default async function OverviewPage({
       </ExplainPanel>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {AGENT_ORDER.map((key) => (
-          <Suspense key={key} fallback={<LoadingCard name={AGENTS[key].fullLabel} />}>
-            <AgentCard agentKey={key} days={days} />
-          </Suspense>
+        {loaded.map((l) => (
+          <AgentCard key={l.agent.key} loaded={l} days={days} />
         ))}
       </div>
+
+      {anyCalls ? (
+        <>
+          <Card>
+            <CardTitle hint="Both agents do the same job a different way. This is how they differ.">
+              How the two compare
+            </CardTitle>
+            <CompareChart
+              rows={compareRows(loaded)}
+              counts={{
+                b: loaded.find((l) => l.agent.key === "b")?.calls.length ?? 0,
+                a: loaded.find((l) => l.agent.key === "a")?.calls.length ?? 0,
+              }}
+            />
+            <p className="mt-3 text-sm text-muted">
+              Only measures counted the same way share this chart. Average call
+              length is a different kind of number, so it sits on the cards
+              above instead of being squeezed in here.
+            </p>
+          </Card>
+
+          <Card>
+            <CardTitle hint="Every call on both numbers, day by day.">
+              Calls per day
+            </CardTitle>
+            <DayChart loaded={withCalls} days={days} />
+          </Card>
+        </>
+      ) : null}
 
       <Suspense fallback={<LoadingCard name="The recap robot" />}>
         <RecapCard days={days} />
       </Suspense>
     </div>
+  );
+}
+
+/**
+ * Read one agent: its live version, its settings, and its calls.
+ *
+ * A failure comes back as a sentence rather than being thrown, so one agent
+ * being unreadable does not take the whole page down with it.
+ */
+async function loadAgent(key: AgentKey, days: number): Promise<Loaded> {
+  const agent = AGENTS[key];
+  const { startMs, endMs } = rangeForDays(days);
+  const empty = {
+    agent,
+    fieldCount: 0,
+    calls: [] as RetellCall[],
+    stats: summarise([]),
+    truncated: false,
+  };
+
+  if (!agent.agentId) {
+    return {
+      ...empty,
+      problem: `We do not know this agent's id, so we cannot read its calls. Add AGENT_${key.toUpperCase()}_ID in the Vercel project settings, then reload.`,
+    };
+  }
+
+  try {
+    // The live version is ALWAYS pulled. Never read from a file.
+    const live = await getAgent(agent.agentId);
+    const result = await listAllCalls({ agentId: agent.agentId, startMs, endMs });
+    return {
+      agent,
+      liveVersion: live.version,
+      fieldCount: live.post_call_analysis_data?.length ?? 0,
+      calls: result.calls,
+      stats: summarise(result.calls),
+      truncated: result.truncated,
+    };
+  } catch (err) {
+    return {
+      ...empty,
+      problem:
+        err instanceof RetellError
+          ? err.plain
+          : "We could not load this agent. Try again.",
+    };
+  }
+}
+
+/**
+ * The three measures worth comparing.
+ *
+ * All three are "out of every 100 calls", so they belong on one chart. Each
+ * agent is measured against its OWN call count, never against the other's:
+ * Agent A takes almost no calls, so a raw count would make it look perfect.
+ */
+function compareRows(loaded: Loaded[]): CompareRow[] {
+  const find = (key: AgentKey) => loaded.find((l) => l.agent.key === key);
+  const rate = (key: AgentKey, pick: (s: AgentStats) => number) => {
+    const l = find(key);
+    if (!l || l.stats.total === 0) return 0;
+    return (pick(l.stats) / l.stats.total) * 100;
+  };
+
+  return [
+    {
+      label: "Wanted work done",
+      means: "Callers who asked us to fix or service something.",
+      b: rate("b", (s) => s.serviceRequests),
+      a: rate("a", (s) => s.serviceRequests),
+    },
+    {
+      label: "Details missing",
+      means: "Calls where the agent did not get everything Daniel needs.",
+      b: rate("b", (s) => s.incomplete),
+      a: rate("a", (s) => s.incomplete),
+    },
+    {
+      label: "Needs a person",
+      means: "Calls somebody should listen to before anything else happens.",
+      b: rate("b", (s) => s.needsPerson),
+      a: rate("a", (s) => s.needsPerson),
+    },
+    {
+      label: "Never said why",
+      means: "Callers who hung up or said nothing at all.",
+      b: rate("b", (s) => s.nothingSaid),
+      a: rate("a", (s) => s.nothingSaid),
+    },
+  ];
+}
+
+/** Calls per day, both agents together, split by the kind of call. */
+function DayChart({ loaded, days }: { loaded: Loaded[]; days: number }) {
+  const all = loaded.flatMap((l) => l.calls);
+  const slices = callTypeSlices(all);
+  const trend = trendByDay(all, days);
+
+  const seriesKeys = slices.map((s) => s.key);
+  const data = trend.map((d) => ({
+    label: d.label,
+    ...Object.fromEntries(seriesKeys.map((k) => [k, d.counts[k] ?? 0])),
+  }));
+
+  return (
+    <TrendChart
+      data={data}
+      seriesKeys={seriesKeys}
+      seriesLabels={Object.fromEntries(slices.map((s) => [s.key, s.label]))}
+      colorIndexes={Object.fromEntries(slices.map((s) => [s.key, s.colorIndex]))}
+    />
   );
 }
 
@@ -91,52 +256,24 @@ function LoadingCard({ name }: { name: string }) {
  * One agent
  * ------------------------------------------------------------------ */
 
-async function AgentCard({
-  agentKey,
-  days,
-}: {
-  agentKey: AgentKey;
-  days: number;
-}) {
-  const agent = AGENTS[agentKey];
-  const { startMs, endMs } = rangeForDays(days);
+function AgentCard({ loaded, days }: { loaded: Loaded; days: number }) {
+  const { agent, liveVersion, fieldCount, calls, stats: s, truncated } = loaded;
 
-  let liveVersion: number | undefined;
-  let fieldCount = 0;
-  let calls;
-  let truncated = false;
-
-  try {
-    // The live version is ALWAYS pulled. Never read from a file.
-    const [live, result] = await Promise.all([
-      getAgent(agent.agentId),
-      listAllCalls({ agentId: agent.agentId, startMs, endMs }),
-    ]);
-    liveVersion = live.version;
-    fieldCount = live.post_call_analysis_data?.length ?? 0;
-    calls = result.calls;
-    truncated = result.truncated;
-  } catch (err) {
-    const plain =
-      err instanceof RetellError
-        ? err.plain
-        : "We could not load this agent. Try again.";
+  if (loaded.problem) {
     return (
       <Card>
         <CardTitle>{agent.fullLabel}</CardTitle>
-        <ErrorState plain={plain} />
+        <ErrorState plain={loaded.problem} />
       </Card>
     );
   }
-
-  const s = summarise(calls);
 
   return (
     <Card>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold">
-            <Link href={`/agent/${agentKey}`} className="hover:underline">
+            <Link href={`/agent/${agent.key}`} className="hover:underline">
               {agent.fullLabel}
             </Link>
           </h2>
@@ -160,7 +297,7 @@ async function AgentCard({
         <span className="technical-only"> · {fieldCount} analysis fields</span>
       </p>
 
-      {s.total === 0 ? (
+      {calls.length === 0 ? (
         <EmptyState
           title="No calls in this time"
           means={`Nothing came in on this number in the last ${rangeLabel(days).toLowerCase()}.`}
@@ -219,7 +356,7 @@ async function AgentCard({
           ) : null}
 
           <Link
-            href={`/agent/${agentKey}?days=${days}`}
+            href={`/agent/${agent.key}?days=${days}`}
             className="mt-4 inline-block text-sm font-medium text-accent hover:underline"
           >
             See every call →
@@ -312,14 +449,12 @@ async function RecapCard({ days }: { days: number }) {
     );
   }
 
-  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  const inRange = runs.filter(
-    (r) => new Date(r.startedAt).getTime() >= cutoff,
-  );
+  const { startMs } = rangeForDays(days);
+  const inRange = runs.filter((r) => Date.parse(r.startedAt) >= startMs);
   const failed = inRange.filter((r) => r.status === "error").length;
   const ok = inRange.filter((r) => r.status === "success").length;
   const other = inRange.length - failed - ok;
-  const newest = runs[0] ? new Date(runs[0].startedAt).getTime() : undefined;
+  const newest = runs[0] ? Date.parse(runs[0].startedAt) : undefined;
 
   return (
     <Card>

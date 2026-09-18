@@ -296,7 +296,7 @@ function toTurns(
     return objectTurns.map((t) => {
       const start = t.words?.[0]?.start;
       return {
-        who: t.role === "agent" ? "agent" : "caller",
+        who: t.role === "agent" ? ("agent" as const) : ("caller" as const),
         said: t.content,
         startSec: typeof start === "number" ? start : undefined,
         startLabel: typeof start === "number" ? clock(start) : undefined,
@@ -304,8 +304,11 @@ function toTurns(
     });
   }
 
+  // No speaker-by-speaker version. The plain one holds BOTH voices in a
+  // single block, so it must not be labelled as the caller: that would put
+  // everything the agent said into the caller's mouth.
   if (plainText && plainText.trim()) {
-    return [{ who: "caller", said: plainText.trim() }];
+    return [{ who: "unknown", said: plainText.trim() }];
   }
 
   return [];

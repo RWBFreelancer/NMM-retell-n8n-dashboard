@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ninja Ops">
+  <!-- A phone handset with a tick: a call that got through. Flat shapes only,
+       so it stays sharp at 16px and needs no raster fallback. -->
+  <rect width="512" height="512" rx="96" fill="#2563eb"/>
+  <path fill="#ffffff" d="M168 120c-14 0-26 9-30 22l-16 52c-4 13 0 27 11 35l34 26c-4 34 30 96 62 116l30-30c10-10 25-13 38-7l50 22c13 6 21 19 20 33l-4 54c-1 17-15 29-32 29C210 472 40 302 40 118c0-17 12-31 29-32z"/>
+  <path fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round" d="M300 190l52 52 108-108"/>
+</svg>

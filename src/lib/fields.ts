@@ -266,6 +266,9 @@ export const FIELDS: FieldSpec[] = [
     means: "The vehicle's serial number. Seventeen letters and digits.",
     group: "job",
     kind: "text",
+    // A VIN identifies one vehicle and, through it, its owner. It belongs
+    // with the name and the address, not with the make and model.
+    personal: true,
   },
   {
     name: "issue_summary",

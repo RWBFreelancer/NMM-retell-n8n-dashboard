@@ -1,9 +1,9 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHydrated } from "@/lib/use-hydrated";
 
 const OPTIONS = [
   { value: "light", label: "Light", Icon: Sun },
@@ -13,11 +13,10 @@ const OPTIONS = [
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // The server does not know the chosen theme, so render the frame only
-  // until the browser has told us. This avoids a wrong highlight on load.
-  useEffect(() => setMounted(true), []);
+  // The server does not know the chosen theme, so nothing is highlighted
+  // until the browser has told us. Otherwise the wrong button lights up for a
+  // moment on every load.
+  const mounted = useHydrated();
 
   return (
     <div

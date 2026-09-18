@@ -91,6 +91,12 @@ export function fieldGroups(call: RetellCall): FieldGroupRows[] {
  *
  * The name is tidied into words so no raw code reaches Simple mode, and the
  * group says plainly that nobody has written a description for it yet.
+ *
+ * **Every unknown field is treated as personal.** We do not know what a field
+ * we have never seen holds. If somebody adds one that captures an address or
+ * an ID, showing it openly would break the very rule this file exists to keep.
+ * Hidden is the safe way to be wrong; shown is not. Once the field is written
+ * into `fields.ts` with a real description, that entry decides instead.
  */
 function unknownRows(
   call: RetellCall,
@@ -108,6 +114,7 @@ function unknownRows(
             "Somebody added this to the agent after this dashboard was written, so there is no description for it yet.",
           group: "quality",
           kind: "text",
+          personal: true, // see the note above: unknown means hidden
         },
         analysisValue(call, name),
       ),

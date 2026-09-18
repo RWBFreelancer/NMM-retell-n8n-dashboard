@@ -1,5 +1,6 @@
 import type { RecapMatch } from "@/lib/correlate";
-import { Card, CardTitle, Chip } from "./ui";
+import { Card, CardTitle, Chip, RawName } from "./ui";
+import { STEP_PLAIN, stepLabel } from "@/lib/plain";
 import { ago, duration } from "@/lib/format";
 
 /**
@@ -70,7 +71,7 @@ export function RecapPanel({ recap }: { recap: RecapMatch }) {
       {recap.failedBecause ? (
         <p className="mt-3 rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">
           <strong className="font-semibold">
-            It stopped at &ldquo;{recap.failedNode ?? "a step"}&rdquo;.
+            It stopped at &ldquo;{recap.failedNode ? stepLabel(recap.failedNode) : "a step"}&rdquo;.
           </strong>{" "}
           {recap.failedBecause}
         </p>
@@ -95,9 +96,13 @@ export function RecapPanel({ recap }: { recap: RecapMatch }) {
                 key={node.name}
                 className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
               >
-                {/* A step name is the n8n node's own name. It is the thing a
-                    person types into n8n to find it, so it stays as it is. */}
-                <span className="text-muted">{node.name}</span>
+                {/* Plain words on screen. The exact n8n node name shows in
+                    Technical mode, because that is what somebody types into
+                    n8n to find this step. */}
+                <span className="text-muted" title={STEP_PLAIN[node.name]?.means}>
+                  {stepLabel(node.name)}
+                  <RawName>{node.name}</RawName>
+                </span>
                 <span className="flex items-center gap-2">
                   {node.problem ? (
                     <span className="text-xs text-bad">{node.problem}</span>
