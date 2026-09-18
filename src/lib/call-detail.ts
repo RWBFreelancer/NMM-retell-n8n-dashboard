@@ -1,7 +1,13 @@
 import "server-only";
 import type { RetellCall } from "./retell";
 import { analysisValue } from "./stats";
-import { FIELDS, FIELD_GROUPS, fieldLabel, type FieldSpec } from "./fields";
+import {
+  FIELDS,
+  FIELD_GROUPS,
+  fieldLabel,
+  findField,
+  type FieldSpec,
+} from "./fields";
 import {
   COST_PRODUCT_PLAIN,
   NEXT_ACTION_PLAIN,
@@ -51,7 +57,7 @@ export type FieldGroupRows = {
 export function fieldGroups(call: RetellCall): FieldGroupRows[] {
   const data = call.call_analysis?.custom_analysis_data ?? {};
 
-  return FIELD_GROUPS.map((group) => ({
+  const known = FIELD_GROUPS.map((group) => ({
     id: group.id,
     label: group.label,
     means: group.means,
@@ -59,6 +65,53 @@ export function fieldGroups(call: RetellCall): FieldGroupRows[] {
       .filter((f) => f.name in data)
       .map((f) => fieldRow(f, analysisValue(call, f.name))),
   })).filter((g) => g.rows.length > 0);
+
+  const extra = unknownRows(call, data);
+  if (extra.length === 0) return known;
+
+  return [
+    ...known,
+    {
+      id: "other",
+      label: "New, and not described yet",
+      means:
+        "The agent saved these and this dashboard has no wording for them yet. Somebody added a field to the agent.",
+      rows: extra,
+    },
+  ];
+}
+
+/**
+ * Anything the agent saved that `fields.ts` does not know about.
+ *
+ * Without this, adding a field to the agent would make it INVISIBLE here: the
+ * page walks its own list of fields, so a new one would simply never be drawn.
+ * The dashboard would then quietly show less than the agent recorded, which is
+ * the worst kind of wrong, because nothing looks broken.
+ *
+ * The name is tidied into words so no raw code reaches Simple mode, and the
+ * group says plainly that nobody has written a description for it yet.
+ */
+function unknownRows(
+  call: RetellCall,
+  data: Record<string, unknown>,
+): FieldRow[] {
+  return Object.keys(data)
+    .filter((name) => !findField(name))
+    .sort()
+    .map((name) =>
+      fieldRow(
+        {
+          name,
+          label: prettify(name),
+          means:
+            "Somebody added this to the agent after this dashboard was written, so there is no description for it yet.",
+          group: "quality",
+          kind: "text",
+        },
+        analysisValue(call, name),
+      ),
+    );
 }
 
 function fieldRow(spec: FieldSpec, raw: string | undefined): FieldRow {

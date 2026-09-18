@@ -1,4 +1,4 @@
-import type { Plain, Tone } from "./plain";
+import { prettify, type Plain, type Tone } from "./plain";
 import {
   CALL_TYPE_PLAIN,
   CONFIDENCE_PLAIN,
@@ -275,6 +275,18 @@ export const FIELDS: FieldSpec[] = [
     kind: "text",
   },
   {
+    // NOT LIVE YET. Robert has not approved this field, and no agent writes
+    // it. It is written here so that the day it does exist, it appears with
+    // proper wording and no code change. Its answers are deliberately read as
+    // free text: nobody has decided what the choices are, and inventing them
+    // here would be a guess. (parent CLAUDE.md rule 12)
+    name: "service_category",
+    label: "Kind of work",
+    means: "The sort of job this is, such as brakes or a battery.",
+    group: "job",
+    kind: "text",
+  },
+  {
     name: "drivable_or_usable_status",
     label: "Does it still run",
     means: "Whether the vehicle can still be driven or used.",
@@ -418,5 +430,5 @@ export function findField(name: string): FieldSpec | undefined {
  * not know, say the raw name rather than hiding it.
  */
 export function fieldLabel(name: string): string {
-  return findField(name)?.label ?? name.replace(/[_-]+/g, " ");
+  return findField(name)?.label ?? prettify(name);
 }
