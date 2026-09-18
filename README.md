@@ -61,21 +61,37 @@ npm run dev          # http://localhost:3000
 
 ### The password
 
+Let it invent one. A password you make up is the thing most likely to go wrong.
+
 ```bash
-npm run hash-password -- "a long password you picked"
+npm run hash-password              # invents a strong password and prints it
+npm run hash-password -- --write   # the same, and updates .env.local for you
+npm run hash-password -- "your own long password"
 ```
 
 It prints the value twice: once as a whole line for `.env.local`, and once
 bare for the Vercel settings page. **In the Vercel value box, paste the bare
 value only** — no `DASHBOARD_PASSWORD_HASH=` in front, no quote marks.
 
-A bcrypt hash starts with `$2b$12$`. In a `.env` file, Next.js reads those `$`
-signs as variable names and eats part of the hash, so every login fails with no
-useful error. Base64 has no `$`, so it always survives. The code accepts either
-shape, so the raw hash is fine in the Vercel settings page, which does not
-substitute anything.
+The value looks like `s1.32768.8.1.<hex>.<hex>`. It holds only the letters a
+to f and s, the digits, and dots. That matters:
 
-Never commit the password or the hash. Never paste either into a chat.
+- A `$` in a `.env` file is read as a variable name, and Next.js eats what
+  follows it. A bcrypt hash starts with `$2b$12$`, so it used to arrive 8
+  characters short and every login failed with no useful error. **This value
+  has no `$`.**
+- Base64 was the first fix, but base64 contains `+`, `/` and `=`, which some
+  paste boxes and URL fields mangle. **This value has none of those either.**
+
+The hashing is scrypt, from Node's own crypto. Nothing to install. It lives in
+`src/lib/password-hash.mjs`, which the app and both npm scripts share, so
+`check-login` can never give a different answer to the server.
+
+Old bcrypt values still work, raw or base64, so nothing breaks in a hurry. A
+value with characters missing is refused outright and the login page says so,
+rather than quietly failing.
+
+Never commit the password or the value. Never paste either into a chat.
 
 ### When a sign-in is refused
 

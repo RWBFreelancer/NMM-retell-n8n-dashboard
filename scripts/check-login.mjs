@@ -15,9 +15,12 @@
  *
  * That is the only way to test the live settings from this computer, because
  * the server never shows them back to you.
+ *
+ * The password check itself comes from src/lib/password-hash.mjs, the same
+ * file the app uses. This script cannot give a different answer to the server.
  */
 import { readFileSync } from "node:fs";
-import bcrypt from "bcryptjs";
+import { hashShape, hashProblem, verifyPassword } from "../src/lib/password-hash.mjs";
 
 const args = process.argv.slice(2);
 const password = args.find((a) => !a.startsWith("--"));
@@ -61,9 +64,9 @@ function report(name, state, detail) {
 const pass = (n, ok, d) => report(n, ok ? "PASS" : "FAIL", d);
 
 /**
- * Strip the three ways a paste goes wrong, exactly as src/lib/auth.ts does.
- * Returns the cleaned value and what had to be removed, so this tool and the
- * live server can never disagree about whether a value is usable.
+ * Strip the three ways a paste goes wrong, exactly as src/lib/login-setup.ts
+ * does. Returns the cleaned value and what had to be removed, so this tool and
+ * the live server can never disagree about whether a value is usable.
  */
 function readSetting(name, raw) {
   if (raw === undefined) return { value: undefined, fixed: [] };
@@ -139,7 +142,7 @@ pass(
 );
 
 if (!hashSetting.value) {
-  console.log("\nAdd the hash, then run this again.\n");
+  console.log("\nAdd the value, then run this again.\n");
   process.exit(1);
 }
 
@@ -150,49 +153,30 @@ if (hashSetting.fixed.length === 0) {
   report("the value is tidy", "PASS", "no stray name, no quotes, no spare space");
 }
 
-const raw = hashSetting.value;
-let hash;
-if (raw.startsWith("$2")) {
-  hash = raw;
-  pass(
-    "hash shape",
-    raw.length === 60,
-    raw.length === 60
-      ? "raw bcrypt, full length"
-      : `raw bcrypt but ${raw.length} characters, should be 60. The $ signs were eaten. Use the base64 form.`,
-  );
-} else {
-  let decoded = "";
-  try {
-    decoded = Buffer.from(raw, "base64").toString("utf8");
-  } catch {
-    decoded = "";
-  }
-  hash = decoded;
-  pass(
-    "hash shape",
-    decoded.startsWith("$2") && decoded.length === 60,
-    decoded.startsWith("$2")
-      ? decoded.length === 60
-        ? "base64, decodes to a full bcrypt hash"
-        : `base64, but decodes to ${decoded.length} characters, should be 60`
-      : "not a bcrypt hash and not base64 of one. Run npm run hash-password again.",
-  );
-}
+const value = hashSetting.value;
+const shape = hashShape(value);
 
-if (hash && hash.startsWith("$2") && hash.length === 60) {
-  let matches = false;
-  try {
-    matches = bcrypt.compareSync(password, hash);
-  } catch {
-    matches = false;
-  }
+const SHAPE_SAYS = {
+  scrypt: "the current kind. Nothing in it can be eaten.",
+  bcrypt: "an old kind, still accepted. Run hash-password to move to the new one.",
+  "bcrypt-base64":
+    "an old kind wrapped in base64, still accepted. Run hash-password to move on.",
+};
+
+pass(
+  "value shape",
+  shape !== "unreadable" && shape !== "bcrypt-cut",
+  SHAPE_SAYS[shape] ?? hashProblem(value),
+);
+
+if (shape !== "unreadable" && shape !== "bcrypt-cut") {
+  const matches = await verifyPassword(password, value);
   pass(
     "the password you typed matches",
     matches,
     matches
       ? "yes"
-      : "no. Either the password is different, or the hash came from a different password.",
+      : "no. Either the password is different, or the value came from a different password.",
   );
 }
 

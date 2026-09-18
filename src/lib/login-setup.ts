@@ -1,4 +1,5 @@
 import "server-only";
+import { hashProblem, isUsableHash } from "./password-hash.mjs";
 
 /**
  * The three settings a sign-in needs, and how to read them safely.
@@ -41,26 +42,6 @@ export function readSetting(name: string): string | undefined {
 }
 
 /**
- * Read the password hash, in either shape.
- *
- * A bcrypt hash looks like `$2b$12$...`. In a .env file, Next.js treats `$2b`
- * as a variable to substitute, so a raw hash arrives 8 characters short and
- * every login fails. Base64 has no `$`, so it survives. We accept both:
- * base64 for .env.local, raw for the Vercel settings page, which does not
- * substitute anything.
- */
-export function readHash(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  if (value.startsWith("$2")) return value.length === 60 ? value : undefined;
-  try {
-    const decoded = Buffer.from(value, "base64").toString("utf8");
-    return decoded.startsWith("$2") && decoded.length === 60 ? decoded : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
  * Name the first sign-in setting that is missing or unreadable, or return
  * null when all three are usable.
  *
@@ -76,16 +57,15 @@ export function loginSetupProblem(): string | null {
   if (!readSetting("DASHBOARD_USERNAME")) {
     return "DASHBOARD_USERNAME is missing.";
   }
+
   const rawHash = readSetting("DASHBOARD_PASSWORD_HASH");
   if (!rawHash) {
     return "DASHBOARD_PASSWORD_HASH is missing.";
   }
-  if (!readHash(rawHash)) {
-    return (
-      "DASHBOARD_PASSWORD_HASH cannot be read. It must be a 60-character " +
-      "bcrypt hash, or base64 of one. Paste only the value: no name in " +
-      `front, no quotes. It is ${rawHash.length} characters long.`
-    );
+  if (!isUsableHash(rawHash)) {
+    // The length is a fact about the setting, not a piece of the secret, and
+    // it is the single most useful clue when a paste went wrong.
+    return `DASHBOARD_PASSWORD_HASH: ${hashProblem(rawHash)} It is ${rawHash.length} characters long.`;
   }
   return null;
 }

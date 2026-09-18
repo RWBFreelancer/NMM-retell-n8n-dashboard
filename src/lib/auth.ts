@@ -1,8 +1,8 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
-import { readHash, readSetting, loginSetupProblem } from "./login-setup";
+import { readSetting, loginSetupProblem } from "./login-setup";
+import { verifyPassword } from "./password-hash.mjs";
 
 /**
  * Raised when the deployment itself is wrong, not the typed password.
@@ -19,7 +19,8 @@ class SetupError extends CredentialsSignin {
  * One shared login. There is no user database.
  *
  * The username sits in DASHBOARD_USERNAME and the password is compared
- * against the bcrypt hash in DASHBOARD_PASSWORD_HASH. Never store, log, or
+ * against the hash in DASHBOARD_PASSWORD_HASH. The hashing itself lives in
+ * password-hash.mjs, which the two npm scripts share. Never store, log, or
  * return the plain password.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -46,13 +47,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const expectedUser = readSetting("DASHBOARD_USERNAME") as string;
-        const expectedHash = readHash(readSetting("DASHBOARD_PASSWORD_HASH")) as string;
+        const expectedHash = readSetting("DASHBOARD_PASSWORD_HASH") as string;
 
         if (!username || !password) return null;
 
         // Always run the hash compare, even when the username is wrong, so
         // the reply takes the same time either way.
-        const passwordOk = await bcrypt.compare(password, expectedHash);
+        const passwordOk = await verifyPassword(password, expectedHash);
         const userOk = timingSafeEqual(username, expectedUser);
 
         if (!passwordOk || !userOk) {
