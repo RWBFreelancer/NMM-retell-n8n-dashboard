@@ -27,9 +27,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const expectedHash = readHash(process.env.DASHBOARD_PASSWORD_HASH);
 
         // Misconfigured is the same as wrong. Never fall open.
-        if (!expectedUser || !expectedHash) {
+        // These messages name the setting, never a value, so they are safe in
+        // the Vercel logs.
+        if (!expectedUser) {
+          console.error("LOGIN SETUP: DASHBOARD_USERNAME is not set.");
+          return null;
+        }
+        if (!expectedHash) {
+          const raw = process.env.DASHBOARD_PASSWORD_HASH;
           console.error(
-            "Login is not set up: DASHBOARD_USERNAME or DASHBOARD_PASSWORD_HASH is missing.",
+            raw
+              ? "LOGIN SETUP: DASHBOARD_PASSWORD_HASH is set but unreadable. " +
+                  "It must be a 60-character bcrypt hash, or base64 of one. " +
+                  'Paste only the value, with no "DASHBOARD_PASSWORD_HASH=" in front and no quotes. ' +
+                  `Got ${raw.length} characters starting "${raw.slice(0, 3)}".`
+              : "LOGIN SETUP: DASHBOARD_PASSWORD_HASH is not set.",
           );
           return null;
         }
@@ -40,7 +52,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const passwordOk = await bcrypt.compare(password, expectedHash);
         const userOk = timingSafeEqual(username, expectedUser);
 
-        if (!passwordOk || !userOk) return null;
+        if (!passwordOk || !userOk) {
+          // Says which half was wrong in the SERVER log only. The person on
+          // the login page is still told nothing.
+          console.error(
+            `LOGIN REFUSED: username ${userOk ? "ok" : "wrong"}, password ${passwordOk ? "ok" : "wrong"}.`,
+          );
+          return null;
+        }
 
         return { id: "dashboard-user", name: expectedUser };
       },

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "hash-password": "node scripts/hash-password.mjs",
-    "check-keys": "node scripts/check-keys.mjs"
+    "check-keys": "node scripts/check-keys.mjs",
+    "check-login": "node scripts/check-login.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
