@@ -1,7 +1,19 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
+import { readHash, readSetting, loginSetupProblem } from "./login-setup";
+
+/**
+ * Raised when the deployment itself is wrong, not the typed password.
+ *
+ * The login page shows a different sentence for this, so a missing or
+ * mistyped setting is never mistaken for a wrong password. The code is the
+ * only thing that reaches the browser, and it names no value.
+ */
+class SetupError extends CredentialsSignin {
+  code = "setup";
+}
 
 /**
  * One shared login. There is no user database.
@@ -20,31 +32,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const username = String(credentials?.username ?? "");
+        const username = String(credentials?.username ?? "").trim();
         const password = String(credentials?.password ?? "");
 
-        const expectedUser = process.env.DASHBOARD_USERNAME;
-        const expectedHash = readHash(process.env.DASHBOARD_PASSWORD_HASH);
-
         // Misconfigured is the same as wrong. Never fall open.
-        // These messages name the setting, never a value, so they are safe in
-        // the Vercel logs.
-        if (!expectedUser) {
-          console.error("LOGIN SETUP: DASHBOARD_USERNAME is not set.");
-          return null;
+        // This message names the setting, never a value, so it is safe in the
+        // Vercel logs. SetupError carries code "setup" to the login page, so
+        // the person is told to check the settings, not their password.
+        const setupProblem = loginSetupProblem();
+        if (setupProblem) {
+          console.error(`LOGIN SETUP: ${setupProblem}`);
+          throw new SetupError();
         }
-        if (!expectedHash) {
-          const raw = process.env.DASHBOARD_PASSWORD_HASH;
-          console.error(
-            raw
-              ? "LOGIN SETUP: DASHBOARD_PASSWORD_HASH is set but unreadable. " +
-                  "It must be a 60-character bcrypt hash, or base64 of one. " +
-                  'Paste only the value, with no "DASHBOARD_PASSWORD_HASH=" in front and no quotes. ' +
-                  `Got ${raw.length} characters starting "${raw.slice(0, 3)}".`
-              : "LOGIN SETUP: DASHBOARD_PASSWORD_HASH is not set.",
-          );
-          return null;
-        }
+
+        const expectedUser = readSetting("DASHBOARD_USERNAME") as string;
+        const expectedHash = readHash(readSetting("DASHBOARD_PASSWORD_HASH")) as string;
+
         if (!username || !password) return null;
 
         // Always run the hash compare, even when the username is wrong, so
@@ -66,26 +69,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 });
-
-/**
- * Read the password hash, in either shape.
- *
- * A bcrypt hash looks like `$2b$12$...`. In a .env file, Next.js treats `$2b`
- * as a variable to substitute, so a raw hash arrives 8 characters short and
- * every login fails. Base64 has no `$`, so it survives. We accept both:
- * base64 for .env.local, raw for the Vercel settings page, which does not
- * substitute anything.
- */
-function readHash(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  if (value.startsWith("$2")) return value; // already a real hash
-  try {
-    const decoded = Buffer.from(value, "base64").toString("utf8");
-    return decoded.startsWith("$2") ? decoded : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 /** Compare two short strings without leaking their length through timing. */
 function timingSafeEqual(a: string, b: string): boolean {

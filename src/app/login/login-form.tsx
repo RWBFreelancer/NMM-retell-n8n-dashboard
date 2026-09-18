@@ -26,8 +26,16 @@ export function LoginForm() {
     });
 
     if (result?.error) {
-      // Never say which half was wrong.
-      setError("That username and password did not match. Try again.");
+      // A setup fault is not a wrong password, and saying so saves hours.
+      // The server names the missing setting in its own log. Nothing here
+      // reveals a username, a password, or a value.
+      setError(
+        result.code === "setup"
+          ? "This dashboard is not set up correctly, so nobody can sign in yet. " +
+              "The sign-in settings on the server are missing or mistyped. " +
+              "The server log names which one."
+          : "That username and password did not match. Try again.",
+      );
       setBusy(false);
       return;
     }

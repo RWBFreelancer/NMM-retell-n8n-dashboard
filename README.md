@@ -65,7 +65,9 @@ npm run dev          # http://localhost:3000
 npm run hash-password -- "a long password you picked"
 ```
 
-It prints two lines. **Use the base64 line in `.env.local`.**
+It prints the value twice: once as a whole line for `.env.local`, and once
+bare for the Vercel settings page. **In the Vercel value box, paste the bare
+value only** — no `DASHBOARD_PASSWORD_HASH=` in front, no quote marks.
 
 A bcrypt hash starts with `$2b$12$`. In a `.env` file, Next.js reads those `$`
 signs as variable names and eats part of the hash, so every login fails with no
@@ -74,6 +76,33 @@ shape, so the raw hash is fine in the Vercel settings page, which does not
 substitute anything.
 
 Never commit the password or the hash. Never paste either into a chat.
+
+### When a sign-in is refused
+
+```bash
+npm run check-login -- "the password you are typing"
+```
+
+It reads `.env.local` the way the app does and prints PASS, WARN, or FAIL for
+each step. It prints no secret.
+
+To test what is in the **Vercel** settings page, copy the value out of the box
+and pass it in. Nothing is sent anywhere and nothing is written to disk:
+
+```bash
+npm run check-login -- "your password" --hash "<the value box contents>"
+```
+
+That is the only way to check the live settings from your computer, because the
+server never shows them back to you.
+
+The login page also warns you by itself. If a sign-in setting is missing or
+unreadable, `/login` shows **"This dashboard is not set up yet"** and names the
+setting, before you type anything. A wrong password gives a different message.
+So the page tells you which of the two problems you have.
+
+The server also logs the reason, with no values. Look in Vercel under the
+deployment's Logs tab for a line starting `LOGIN SETUP:` or `LOGIN REFUSED:`.
 
 ## Put it on Vercel
 
@@ -148,10 +177,16 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/api/retell/calls
 src/
   app/
     (app)/            Signed-in pages. The nav shell lives here.
+      page.tsx        Overview.
+      agent/[key]/    One agent: the call table, filters, search, paging, CSV.
     login/            The only page a signed-out person can reach.
     api/              Server routes. The ONLY place a key is used.
   components/         Shared pieces. Never import from src/lib/retell.ts here.
+    call-table.tsx    The call table. Caller numbers start hidden.
   lib/
+    call-filters.ts   The quick filters. One definition each, shared.
+    call-rows.ts      Turns a Retell call into a table row, in plain English.
+    call-row.ts       The row type, and the CSV writer. Server and browser.
     retell.ts         Retell client. server-only. Read-only allow-list.
     n8n.ts            n8n client. server-only. Read-only allow-list.
     agents.ts         The two agents. Ids only, never a version number.
@@ -159,6 +194,7 @@ src/
     stats.ts          Counting rules. "unknown" is always its own bucket.
     format.ts         Dates and numbers, always in California time.
     chart-theme.ts    Resolves CSS colour tokens for Recharts.
+    login-setup.ts    Reads the sign-in settings. Forgives a bad paste.
   middleware.ts       Blocks every route for a signed-out visitor.
 ```
 

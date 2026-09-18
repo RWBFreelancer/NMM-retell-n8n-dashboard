@@ -355,3 +355,128 @@ export const METRIC_PLAIN: Record<string, Plain> = {
     means: "Callers who put the phone down before saying what they wanted.",
   },
 };
+
+/* ------------------------------------------------------------------ *
+ * What kind of call it was. `call_type` on the agent.
+ *
+ * "unknown" is a real answer here: the agent decided it could not tell,
+ * usually a hang-up. It is never folded into anything else, and it never
+ * shares a bucket with "(not recorded)", which means nothing was saved.
+ * ------------------------------------------------------------------ */
+
+export const CALL_TYPE_PLAIN: Record<string, Plain> = {
+  service_request: {
+    label: "Wants work done",
+    means: "The caller asked us to fix or service a vehicle or a machine.",
+    tone: "good",
+  },
+  roadside_urgent: {
+    label: "Stuck at the roadside",
+    means: "The caller was stranded or unsafe and needed help right away.",
+    soWhat: "These come first.",
+    tone: "bad",
+  },
+  existing_customer_follow_up: {
+    label: "Customer following up",
+    means: "Somebody we have already worked for rang about that job.",
+    tone: "info",
+  },
+  non_service_business_message: {
+    label: "Business message",
+    means: "A business caller who was not selling. A supplier, or a question.",
+    tone: "neutral",
+  },
+  sales_solicitation: {
+    label: "Somebody selling",
+    means: "The caller wanted to sell us something.",
+    soWhat: "No action needed.",
+    tone: "neutral",
+  },
+  unknown: {
+    label: "Never said",
+    means: "The caller never said what they wanted. Usually a hang-up.",
+    tone: "warn",
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * How soon it is needed. `urgency` on the agent.
+ * ------------------------------------------------------------------ */
+
+export const URGENCY_PLAIN: Record<string, Plain> = {
+  high: {
+    label: "Needed now",
+    means: "Today or by tomorrow morning, or somebody is stranded.",
+    tone: "bad",
+  },
+  medium: {
+    label: "Needed soon",
+    means: "Within the next few days.",
+    tone: "warn",
+  },
+  low: {
+    label: "No rush",
+    means: "Routine work. The timing is flexible.",
+    tone: "good",
+  },
+  unknown: {
+    label: "Never said",
+    means: "The caller did not say how soon they needed it.",
+    tone: "neutral",
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * A yes / no / unknown answer.
+ *
+ * The agent can answer three ways, and the three mean different things.
+ * Blank is a fourth thing again, and plainOr() handles that one.
+ * ------------------------------------------------------------------ */
+
+export const YES_NO_PLAIN: Record<string, Plain> = {
+  yes: { label: "Yes", means: "The agent answered yes.", tone: "good" },
+  true: { label: "Yes", means: "The agent answered yes.", tone: "good" },
+  no: { label: "No", means: "The agent answered no.", tone: "neutral" },
+  false: { label: "No", means: "The agent answered no.", tone: "neutral" },
+  unknown: {
+    label: "Could not tell",
+    means: "Too little was said for the agent to answer.",
+    tone: "warn",
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * How sure the agent was about what it wrote down. `ai_confidence`.
+ * ------------------------------------------------------------------ */
+
+export const CONFIDENCE_PLAIN: Record<string, Plain> = {
+  high: { label: "Sure", means: "The agent was confident in these notes.", tone: "good" },
+  medium: { label: "Fairly sure", means: "The agent was reasonably confident.", tone: "warn" },
+  low: {
+    label: "Not sure",
+    means: "The agent doubted its own notes on this call.",
+    soWhat: "Worth a listen.",
+    tone: "bad",
+  },
+};
+
+/* ------------------------------------------------------------------ *
+ * The one-line meaning of each column and each filter on the agent page.
+ * A heading is a promise about what the column holds, so it lives here
+ * with everything else a person reads.
+ * ------------------------------------------------------------------ */
+
+export const COLUMN_PLAIN: Record<string, Plain> = {
+  when: { label: "When", means: "When the call started, California time." },
+  from: { label: "Caller", means: "The number that rang in. Hidden until you unhide it." },
+  length: { label: "Length", means: "How long the call lasted." },
+  call_type: { label: "What they wanted", means: "The kind of call the agent decided this was." },
+  urgency: { label: "How soon", means: "How quickly the caller needs the work done." },
+  service_request: { label: "Asked for work", means: "Whether the caller asked us to fix something." },
+  incomplete_intake: {
+    label: "Details missing",
+    means: "The agent did not get everything Daniel needs.",
+  },
+  ended: { label: "How it ended", means: "Why the call finished." },
+  cost: { label: "Cost", means: "What Retell charged for this call." },
+};
