@@ -29,4 +29,8 @@ This folder is self-contained. It is pushed to its own **public** GitHub repo.
 
 The agents, the flows, the n8n workflow, and the Python tools live one level up.
 Read `../CLAUDE.md` before touching anything outside this folder.
+If this folder is not inside the parent repo (for example a standalone clone at
+`C:\Projects\NMM-retell-n8n-dashboard`), the parent repo is
+`RWBFreelancer/ninja_mobile_mechanics_phase_1`. Local copy:
+`C:\Projects\ninja_mobile_mechanics_phase_1`. Read its `CLAUDE.md` there.
 The build plan for this dashboard is in the parent repo's plan file.
