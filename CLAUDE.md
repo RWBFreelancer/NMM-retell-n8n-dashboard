@@ -1,6 +1,11 @@
 # Ninja Ops Dashboard
 
-Live copy: `C:\Projects\NMM-retell-n8n-dashboard`, branch `main` (checked 2026-11-23). The clone at `C:\Projects\ninja_mobile_mechanics_phase_1\dashboard` is an old copy. Do not use it.
+## Sources (checked 2026-11-24)
+
+- **Live:** `C:\Projects\NMM-retell-n8n-dashboard`, branch `main`. Old copy (do not use): `C:\Projects\ninja_mobile_mechanics_phase_1\dashboard`, blocked by the old-copy hook.
+- **Runs today:** Next.js app in `src/` (`npm run dev`, `npm run build`), helper scripts in `scripts/`. Deployed on Vercel.
+- **Frozen:** None.
+- **Rule:** see `C:\Projects\AGENTS.md`, "Sources". New copy, branch or frozen file: add it to `~/.claude/old-copies.json` and to this block in the same step.
 
 A read-only web dashboard over the two Retell agents and the n8n recap
 workflow. Next.js on Vercel. Login protected. Built by Rey.
