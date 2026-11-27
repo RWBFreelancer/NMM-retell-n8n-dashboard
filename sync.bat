@@ -51,7 +51,7 @@ echo  [4/4] Uploading...
 git push
 if errorlevel 1 (
     echo.
-    echo  [X] Upload failed. See 03-TROUBLESHOOTING.md
+    echo  [X] Upload failed. Open GitHub Desktop to see why.
     echo.
     pause
     exit /b 1
