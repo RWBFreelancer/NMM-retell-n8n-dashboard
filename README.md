@@ -172,12 +172,18 @@ that breaks the terms. Budget $20 a month for Pro before showing a client.
 Run these after any change. All must pass.
 
 ```bash
-npm run check-keys                   # both keys work, Retell key cannot write
-npx tsc --noEmit                     # types are sound
-npm run build                        # it builds
-grep -rl "Bearer" .next/static/      # MUST print nothing
-grep -rlE "PATCH|PUT|DELETE" src/    # MUST print nothing
+npm run verify                       # types, lint, tests, build, repo guard (the same as CI)
+npm run check-keys                   # both keys work, Retell key cannot write (needs .env.local)
 ```
+
+`npm run verify` also does the two old manual checks: no `Bearer` in `.next/static/` and no
+`PATCH`, `PUT` or `DELETE` in `src/` (`scripts/check-repo.mjs`). It also blocks `.env` files, data
+files, files over 5 MB, and real phone numbers or emails (555 numbers and `example.com` are fine).
+
+**CI (GitHub Actions, added 2026-11-28):** `.github/workflows/ci.yml` runs on each PR and each push to
+`main`. Job `verify`: `npm ci`, `npm run verify`, and `npm audit` (high and critical, shipped code only).
+Job `secrets`: gitleaks scans all git history. No secrets are needed. Dependabot
+(`.github/dependabot.yml`) opens weekly update PRs. New versions wait 14 days. Major versions are skipped.
 
 Signed out, every page and every `/api/` route must answer with a redirect to
 `/login`, not with data:
