@@ -1,0 +1,20 @@
+# Weekly update PRs for the pinned actions and npm packages.
+# Weekly update PRs. New versions wait 14 days. CI must pass before Rey merges one.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+  - package-ecosystem: npm        # Node projects
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 5
+    ignore:                       # Remove this block if major upgrades are fine for this project.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
